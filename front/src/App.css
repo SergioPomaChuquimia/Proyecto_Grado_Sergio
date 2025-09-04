@@ -1,0 +1,65 @@
+/* src/App.css */
+
+.App {
+  text-align: center;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-form input {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.login-form button {
+  padding: 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-form button:hover {
+  background-color: #45a049;
+}
+
+.App-header {
+  /* Ocupa toda la pantalla y centra su contenido */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  /* Mismo degradado que el Login */
+  background: radial-gradient(
+    circle at center,
+    #0d47a1 0%,
+    #0b3c91 40%,
+    #082567 70%,
+    #050f2c 100%
+  );
+
+  color: #fff; /* Texto blanco */
+}
+
+/* Si hay párrafos directos dentro de App-header */
+.App-header p {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
