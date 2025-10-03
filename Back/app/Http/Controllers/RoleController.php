@@ -35,7 +35,6 @@ class RoleController extends Controller
         ]);
 
         $role->update($data);
-
         return $role;
     }
 

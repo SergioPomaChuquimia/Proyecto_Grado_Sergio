@@ -11,3 +11,7 @@ return [
     'supports_credentials' => true,  // Esto es esencial para compartir cookies entre frontend y backend
 ];
 
+Log::info('CORS Configurado', [
+    'allowed_origins' => config('cors.allowed_origins'),
+    'supports_credentials' => config('cors.supports_credentials')
+]);

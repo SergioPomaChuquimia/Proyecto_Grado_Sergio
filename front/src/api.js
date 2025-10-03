@@ -5,15 +5,10 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Interceptor de Axios para agregar el token CSRF en las solicitudes
+// Interceptor de Axios para agregar el token CSRF
 api.interceptors.request.use((config) => {
-  const token = document.cookie
-    .split('; ')
-    .find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];  // Obtener el token de la cookie
-
-  if (token) {
-    config.headers['X-XSRF-TOKEN'] = token;  // Agregar el token CSRF a los encabezados
-  }
+  const token = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
+  if (token) config.headers['X-XSRF-TOKEN'] = token;
   return config;
 });
 

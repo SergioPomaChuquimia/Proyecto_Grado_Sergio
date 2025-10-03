@@ -2,46 +2,51 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container, Card, CardContent, Typography,
-  TextField, Button, Stack, Box, Alert
+  TextField, Button, Stack, Alert
 } from '@mui/material';
+
+const API_BASE = 'http://localhost:8000';
 
 export default function RoleForm() {
   const [form, setForm] = useState({ name: '', description: '' });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
+    setForm((f) => ({ ...f, [name]: value }));
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
 
-    // Preflight CSRF (Sanctum)
-    await fetch('http://localhost:8000/sanctum/csrf-cookie', { credentials: 'include' });
+    try {
+      await fetch(`${API_BASE}/sanctum/csrf-cookie`, { credentials: 'include' });
 
-    const res = await fetch('http://localhost:8000/api/roles', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(form),
-    });
+      const res = await fetch(`${API_BASE}/api/roles`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(form),
+      });
 
-    if (res.status === 422) {
-      const data = await res.json();
-      setErrors(data.errors || {});
-      return;
+      if (res.status === 422) {
+        const data = await res.json();
+        setErrors(data.errors || {});
+        return;
+      }
+
+      if (!res.ok) {
+        alert('Error al crear el rol.');
+        return;
+      }
+
+      await res.json();
+      navigate('/roles');
+    } catch {
+      alert('Error de red al crear el rol.');
     }
-
-    if (!res.ok) {
-      alert('Error al crear el rol.');
-      return;
-    }
-
-    await res.json();
-    navigate('/roles');
   };
 
   return (
@@ -63,7 +68,7 @@ export default function RoleForm() {
               value={form.name}
               onChange={handleChange}
               error={!!errors.name}
-              helperText={errors.name?.join(' ')}
+              helperText={errors.name?.join?.(' ') || ''}
               fullWidth
               required
             />
@@ -74,7 +79,7 @@ export default function RoleForm() {
               value={form.description}
               onChange={handleChange}
               error={!!errors.description}
-              helperText={errors.description?.join(' ')}
+              helperText={errors.description?.join?.(' ') || ''}
               fullWidth
               multiline
               minRows={3}

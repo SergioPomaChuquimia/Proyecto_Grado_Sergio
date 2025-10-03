@@ -1,4 +1,3 @@
-// src/components/Register.js
 import { useState } from "react";
 import { register } from "../auth";
 import {
@@ -19,20 +18,16 @@ const StyledCard = styled(Card)(({ theme }) => ({
   flexDirection: "column",
   alignSelf: "center",
   width: "100%",
-  padding: theme.spacing(6), // más padding
+  padding: theme.spacing(6),
   gap: theme.spacing(3),
   margin: "auto",
-  [theme.breakpoints.up("sm")]: {
-    maxWidth: "600px", // más ancho
-  },
-  [theme.breakpoints.up("md")]: {
-    maxWidth: "700px", // aún más ancho en pantallas grandes
-  },
-  boxShadow:
-    "hsla(0, 0%, 98%, 0.08) 0px 8px 24px, hsla(0, 0%, 89%, 0.08) 0px 20px 40px -5px",
+  borderRadius: theme.spacing(3),
+  backgroundColor: theme.palette.background.paper,
+  [theme.breakpoints.up("sm")]: { maxWidth: "600px" },
+  [theme.breakpoints.up("md")]: { maxWidth: "700px" },
+  boxShadow: "0px 10px 25px rgba(0,0,0,0.1), 0px 4px 15px rgba(0,0,0,0.06)",
   ...(theme.palette.mode === "dark" && {
-    boxShadow:
-      "hsla(220, 30%, 5%, 0.6) 0px 8px 24px, hsla(0, 0%, 100%, 0.1) 0px 20px 40px -5px",
+    boxShadow: "0px 10px 25px rgba(255,255,255,0.08), 0px 4px 15px rgba(255,255,255,0.06)",
   }),
 }));
 
@@ -41,8 +36,29 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
   padding: theme.spacing(4),
   background:
     theme.palette.mode === "light"
-      ? "linear-gradient(135deg, #f5f7fa, #c3cfe2)"
+      ? "linear-gradient(135deg, #e0eafc, #cfdef3)"
       : "linear-gradient(135deg, #1f1c2c, #928dab)",
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  borderRadius: theme.spacing(2),
+  textTransform: "none",
+  fontWeight: 600,
+  fontSize: "1rem",
+  padding: theme.spacing(1.5),
+  background:
+    theme.palette.mode === "light"
+      ? "linear-gradient(135deg, #4facfe, #00f2fe)"
+      : "linear-gradient(135deg, #667eea, #764ba2)",
+  transition: "all 0.3s ease",
+  "&:hover": { transform: "translateY(-2px)", boxShadow: "0px 8px 20px rgba(0,0,0,0.15)" },
+}));
+
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  "& .MuiOutlinedInput-root": {
+    borderRadius: theme.spacing(2),
+    "&:hover fieldset": { borderColor: theme.palette.primary.main },
+  },
 }));
 
 function Register() {
@@ -53,44 +69,37 @@ function Register() {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState("");
 
-  // ✅ Validaciones
-// ✅ Validaciones
-const validateForm = () => {
-  const newErrors = {};
+  const validateForm = () => {
+    const newErrors = {};
 
-if (!name.trim()) {
-  newErrors.name = "El nombre es obligatorio.";
-} else if (name.length < 3) {
-  newErrors.name = "El nombre debe tener al menos 3 caracteres.";
-} else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(name)) {
-  newErrors.name = "El nombre solo puede contener letras y espacios.";
-}
+    if (!name.trim()) {
+      newErrors.name = "El nombre es obligatorio.";
+    } else if (name.length < 3) {
+      newErrors.name = "El nombre debe tener al menos 3 caracteres.";
+    } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(name)) {
+      newErrors.name = "El nombre solo puede contener letras y espacios.";
+    }
 
+    if (!email.trim()) {
+      newErrors.email = "El correo es obligatorio.";
+    } else if (!/^[^\s@]+@gmail\.com$/.test(email)) {
+      newErrors.email = "El correo debe ser una dirección válida de @gmail.com.";
+    }
 
-if (!email.trim()) {
-  newErrors.email = "El correo es obligatorio.";
-} else if (!/^[^\s@]+@gmail\.com$/.test(email)) {
-  newErrors.email = "El correo debe ser una dirección válida de @gmail.com.";
-}
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+    if (!password) {
+      newErrors.password = "La contraseña es obligatoria.";
+    } else if (!passwordRegex.test(password)) {
+      newErrors.password = "Debe tener al menos 6 caracteres, una mayúscula, un número y un símbolo.";
+    }
 
+    if (password !== passwordConfirmation) {
+      newErrors.passwordConfirmation = "Las contraseñas no coinciden.";
+    }
 
-  // 🔥 Nuevo regex más flexible
-  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
-  if (!password) {
-    newErrors.password = "La contraseña es obligatoria.";
-  } else if (!passwordRegex.test(password)) {
-    newErrors.password =
-      "Debe tener al menos 6 caracteres, una mayúscula, un número y un símbolo.";
-  }
-
-  if (password !== passwordConfirmation) {
-    newErrors.passwordConfirmation = "Las contraseñas no coinciden.";
-  }
-
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
-
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -98,21 +107,14 @@ if (!email.trim()) {
     if (!validateForm()) return;
 
     try {
-      const response = await register(
-        name,
-        email,
-        password,
-        passwordConfirmation
-      );
-      console.log("Registro exitoso:", response);
+      await register(name, email, password, passwordConfirmation);
       setSuccess("Registro exitoso. Ahora puedes iniciar sesión.");
       setErrors({});
       setName("");
       setEmail("");
       setPassword("");
       setPasswordConfirmation("");
-    } catch (err) {
-      console.error("Error al registrar:", err);
+    } catch {
       setErrors({ global: "Hubo un error al registrar. Intenta nuevamente." });
     }
   };
@@ -120,24 +122,19 @@ if (!email.trim()) {
   return (
     <>
       <CssBaseline />
-      <SignUpContainer
-        direction="column"
-        justifyContent="center"
-        alignItems="center"
-      >
+      <SignUpContainer direction="column" justifyContent="center" alignItems="center">
         <StyledCard variant="outlined">
-          <Typography component="h1" variant="h4" sx={{ textAlign: "center", mb: 2 }}>
+          <Typography component="h1" variant="h4" sx={{ textAlign: "center", mb: 1, fontWeight: 700 }}>
             Crear cuenta
           </Typography>
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            sx={{ display: "flex", flexDirection: "column", gap: 3 }}
-          >
-            {/* Nombre */}
+          <Typography variant="body1" sx={{ textAlign: "center", color: "text.secondary", mb: 3 }}>
+            Completa el formulario para registrarte
+          </Typography>
+
+          <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <FormControl>
               <FormLabel htmlFor="name">Nombre</FormLabel>
-              <TextField
+              <StyledTextField
                 id="name"
                 type="text"
                 value={name}
@@ -150,10 +147,9 @@ if (!email.trim()) {
               />
             </FormControl>
 
-            {/* Email */}
             <FormControl>
               <FormLabel htmlFor="email">Correo electrónico</FormLabel>
-              <TextField
+              <StyledTextField
                 id="email"
                 type="email"
                 value={email}
@@ -166,10 +162,9 @@ if (!email.trim()) {
               />
             </FormControl>
 
-            {/* Contraseña */}
             <FormControl>
               <FormLabel htmlFor="password">Contraseña</FormLabel>
-              <TextField
+              <StyledTextField
                 id="password"
                 type="password"
                 value={password}
@@ -182,12 +177,9 @@ if (!email.trim()) {
               />
             </FormControl>
 
-            {/* Confirmación */}
             <FormControl>
-              <FormLabel htmlFor="passwordConfirmation">
-                Confirmar Contraseña
-              </FormLabel>
-              <TextField
+              <FormLabel htmlFor="passwordConfirmation">Confirmar Contraseña</FormLabel>
+              <StyledTextField
                 id="passwordConfirmation"
                 type="password"
                 value={passwordConfirmation}
@@ -200,26 +192,18 @@ if (!email.trim()) {
               />
             </FormControl>
 
-            <Button type="submit" variant="contained" size="large" fullWidth>
+            <StyledButton type="submit" size="large" fullWidth>
               Registrarse
-            </Button>
+            </StyledButton>
 
-            {/* Errores globales */}
             {errors.global && (
-              <Typography
-                variant="body2"
-                sx={{ color: "red", mt: 1, textAlign: "center" }}
-              >
+              <Typography variant="body2" sx={{ color: "red", mt: 1, textAlign: "center" }}>
                 {errors.global}
               </Typography>
             )}
 
-            {/* Mensaje de éxito */}
             {success && (
-              <Typography
-                variant="body2"
-                sx={{ color: "green", mt: 1, textAlign: "center" }}
-              >
+              <Typography variant="body2" sx={{ color: "green", mt: 1, textAlign: "center" }}>
                 {success}
               </Typography>
             )}

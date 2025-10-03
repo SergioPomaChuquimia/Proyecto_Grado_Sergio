@@ -7,18 +7,14 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    // Listar usuarios con su rol
     public function index()
     {
         return User::with('role')->get(); 
     }
 
-    // Asignar un rol a un usuario
     public function assignRole(Request $request, $id)
     {
-        $request->validate([
-            'role_id' => 'required|exists:roles,id',
-        ]);
+        $request->validate(['role_id' => 'required|exists:roles,id']);
 
         $user = User::findOrFail($id);
         $user->role_id = $request->role_id;
@@ -27,12 +23,22 @@ class UserController extends Controller
         return response()->json(['message' => 'Rol asignado correctamente']);
     }
 
-    // Eliminar un usuario
     public function destroy($id)
     {
         $user = User::findOrFail($id);
         $user->delete();
 
         return response()->json(['message' => 'Usuario eliminado']);
+    }
+
+    public function unlockUser($id)
+    {
+        $user = User::findOrFail($id);
+
+        $user->is_blocked = false;
+        $user->password_change_attempts = 0;
+        $user->save();
+
+        return response()->json(['message' => 'Usuario desbloqueado correctamente', 'user' => $user]);
     }
 }

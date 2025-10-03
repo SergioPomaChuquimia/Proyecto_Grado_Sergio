@@ -12,25 +12,22 @@ import {
   CircularProgress,
   Select,
   MenuItem,
+  Box,
 } from '@mui/material';
 import api from '../api';
+import { unlockUser } from '../auth';
 
-export default function UserManagement() {
+export default function UserManagement({ currentUser }) {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUsers();
-    fetchRoles();
-  }, []);
-
   const fetchUsers = async () => {
     try {
-      const res = await api.get("/api/users");
-      setUsers(res.data);
+      const res = await api.get('/api/users');
+      setUsers(res.data || []);
     } catch (err) {
-      console.error("Error al obtener usuarios:", err);
+      console.error('Error al obtener usuarios:', err);
     } finally {
       setLoading(false);
     }
@@ -38,19 +35,24 @@ export default function UserManagement() {
 
   const fetchRoles = async () => {
     try {
-      const res = await api.get("/api/roles");
-      setRoles(res.data);
+      const res = await api.get('/api/roles');
+      setRoles(res.data || []);
     } catch (err) {
-      console.error("Error al obtener roles:", err);
+      console.error('Error al obtener roles:', err);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchRoles();
+  }, []);
 
   const deleteUser = async (id) => {
     try {
       await api.delete(`/api/users/${id}`);
-      setUsers(users.filter(u => u.id !== id));
+      setUsers(prev => prev.filter(u => u.id !== id));
     } catch (err) {
-      console.error("Error al eliminar usuario:", err);
+      console.error('Error al eliminar usuario:', err);
     }
   };
 
@@ -59,19 +61,22 @@ export default function UserManagement() {
       await api.put(`/api/users/${id}/role`, { role_id: roleId });
       fetchUsers();
     } catch (err) {
-      console.error("Error al asignar rol:", err);
+      console.error('Error al asignar rol:', err);
     }
   };
 
-  if (loading) return <CircularProgress />;
+  if (loading) {
+    return (
+      <Box sx={{ py: 10, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-  // Ver si ya existe un DIRECTOR en todo el sistema (insensible a mayúsculas)
-  const directorUser = users.find(
-    u => u.role && u.role.name && u.role.name.toLowerCase() === "director"
-  );
+  const directorUser = users.find(u => (u.role?.name || '').toLowerCase() === 'director');
 
   return (
-    <Container>
+    <Container sx={{ py: 3 }}>
       <Typography variant="h5" gutterBottom>
         Gestión de Usuarios
       </Typography>
@@ -85,68 +90,73 @@ export default function UserManagement() {
             <TableCell align="center">Acciones</TableCell>
           </TableRow>
         </TableHead>
+
         <TableBody>
           {users.map((user) => {
-            const isAdmin = user.email === "admin@gmail.com";
-            const isDirector =
-              user.role && user.role.name && user.role.name.toLowerCase() === "director";
+            const isDirector = (user.role?.name || '').toLowerCase() === 'director';
+            const isSelf = currentUser?.id === user.id;
 
             return (
-              <TableRow key={user.id}>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
+              <TableRow key={user.id} hover>
+                <TableCell>{user.name || '—'}</TableCell>
+                <TableCell>{user.email || '—'}</TableCell>
 
-                {/* Selector dinámico de roles */}
                 <TableCell>
-                  {isAdmin ? (
-                    <Typography variant="body2" color="textSecondary">
-                      {user.role ? user.role.name : "Admin"}
-                    </Typography>
-                  ) : (
-                    <Select
-                      value={user.role ? user.role.id : ""}
-                      onChange={(e) => assignRole(user.id, e.target.value)}
-                      displayEmpty
-                      size="small"
-                      sx={{ minWidth: 150 }}
-                    >
-                      <MenuItem value="" disabled>
-                        Selecciona un rol
-                      </MenuItem>
-                      {roles.map((role) => {
-                        const roleName = role.name ? role.name.toLowerCase() : "";
-
-                        if (roleName === "director") {
-                          // Si ya existe un director, solo mostrarlo al usuario que lo tiene
-                          if (directorUser && !isDirector) return null;
-                        }
-
-                        return (
-                          <MenuItem key={role.id} value={role.id}>
-                            {role.name}
-                          </MenuItem>
-                        );
-                      })}
-                    </Select>
-                  )}
+                  <Select
+                    value={user.role ? user.role.id : ''}
+                    onChange={(e) => assignRole(user.id, e.target.value)}
+                    displayEmpty
+                    size="small"
+                    sx={{ minWidth: 180 }}
+                  >
+                    <MenuItem value="" disabled>
+                      Selecciona un rol
+                    </MenuItem>
+                    {roles.map((role) => {
+                      const roleName = (role.name || '').toLowerCase();
+                      // Permitir solo un "director"
+                      if (roleName === 'director' && directorUser && directorUser.id !== user.id) {
+                        return null;
+                      }
+                      return (
+                        <MenuItem key={role.id} value={role.id}>
+                          {role.name}
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
                 </TableCell>
 
                 <TableCell align="center">
-                  {isAdmin ? (
-                    <Typography variant="caption" color="textSecondary">
-                      Admin protegido
-                    </Typography>
-                  ) : (
+                  {user.is_blocked && (
                     <Button
-                      variant="outlined"
-                      color="error"
+                      variant="contained"
+                      color="primary"
                       size="small"
-                      onClick={() => deleteUser(user.id)}
-                      disabled={isDirector} // proteger al director
+                      sx={{ mr: 1 }}
+                      onClick={async () => {
+                        try {
+                          await unlockUser(user.id);
+                          alert('✅ Usuario desbloqueado con éxito');
+                          fetchUsers();
+                        } catch {
+                          alert('❌ Error al desbloquear usuario');
+                        }
+                      }}
                     >
-                      Eliminar
+                      Desbloquear
                     </Button>
                   )}
+
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    onClick={() => deleteUser(user.id)}
+                    disabled={isDirector || isSelf}
+                  >
+                    Eliminar
+                  </Button>
                 </TableCell>
               </TableRow>
             );

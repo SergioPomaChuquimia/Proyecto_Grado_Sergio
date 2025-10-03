@@ -1,5 +1,4 @@
-// src/components/RoleList.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import api from "../api";
 import {
   Container,
@@ -19,11 +18,7 @@ function RoleList() {
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchRoles();
-  }, []);
-
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get("/api/roles");
@@ -33,12 +28,19 @@ function RoleList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
 
   const handleDelete = async (id) => {
-    if (window.confirm("¿Seguro que quieres eliminar este rol?")) {
+    if (!window.confirm("¿Seguro que quieres eliminar este rol?")) return;
+    try {
       await api.delete(`/api/roles/${id}`);
       fetchRoles();
+    } catch (err) {
+      console.error("Error eliminando rol:", err);
     }
   };
 
@@ -53,9 +55,13 @@ function RoleList() {
   };
 
   const handleSaveEdit = async (id) => {
-    await api.put(`/api/roles/${id}`, formData);
-    fetchRoles();
-    handleCancelEdit();
+    try {
+      await api.put(`/api/roles/${id}`, formData);
+      fetchRoles();
+      handleCancelEdit();
+    } catch (err) {
+      console.error("Error actualizando rol:", err);
+    }
   };
 
   if (loading) {
@@ -82,7 +88,7 @@ function RoleList() {
                       label="Nombre"
                       value={formData.name}
                       onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
+                        setFormData((prev) => ({ ...prev, name: e.target.value }))
                       }
                       fullWidth
                     />
@@ -90,7 +96,7 @@ function RoleList() {
                       label="Descripción"
                       value={formData.description}
                       onChange={(e) =>
-                        setFormData({ ...formData, description: e.target.value })
+                        setFormData((prev) => ({ ...prev, description: e.target.value }))
                       }
                       fullWidth
                     />
@@ -102,11 +108,7 @@ function RoleList() {
                       >
                         Guardar
                       </Button>
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        onClick={handleCancelEdit}
-                      >
+                      <Button variant="outlined" color="secondary" onClick={handleCancelEdit}>
                         Cancelar
                       </Button>
                     </Box>
@@ -118,18 +120,10 @@ function RoleList() {
                       {role.description || "Sin descripción"}
                     </Typography>
                     <Box display="flex" gap={2}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleEditClick(role)}
-                      >
+                      <Button variant="contained" color="primary" onClick={() => handleEditClick(role)}>
                         Editar
                       </Button>
-                      <Button
-                        variant="contained"
-                        color="error"
-                        onClick={() => handleDelete(role.id)}
-                      >
+                      <Button variant="contained" color="error" onClick={() => handleDelete(role.id)}>
                         Eliminar
                       </Button>
                     </Box>

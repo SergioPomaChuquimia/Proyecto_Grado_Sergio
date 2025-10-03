@@ -1,15 +1,15 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
 
 const CapturePhoto = ({ onCapture }) => {
   const webcamRef = useRef(null);
   const [image, setImage] = useState(null);
 
-  const capture = React.useCallback(() => {
+  const capture = useCallback(() => {
     const imageSrc = webcamRef.current.getScreenshot();
     setImage(imageSrc);
-    onCapture(imageSrc); // Pasa la imagen capturada al componente superior
-  }, [webcamRef, setImage, onCapture]);
+    onCapture(imageSrc);
+  }, [onCapture]);
 
   return (
     <div>
@@ -18,9 +18,7 @@ const CapturePhoto = ({ onCapture }) => {
         ref={webcamRef}
         screenshotFormat="image/jpeg"
         width="100%"
-        videoConstraints={{
-          facingMode: "user",
-        }}
+        videoConstraints={{ facingMode: "user" }}
       />
       <button onClick={capture}>Capturar Foto</button>
       {image && (

@@ -1,73 +1,123 @@
-// src/auth.js
-import api from './api';
+import axios from "axios";
 
-// Log para verificar si la función se ejecuta
+const api = axios.create({
+  baseURL: "http://localhost:8000",
+  withCredentials: true, // Cookies de sesión (Sanctum)
+});
+
+const isDev = process.env.NODE_ENV !== 'production';
+
+// Interceptores de Axios
+api.interceptors.request.use((config) => {
+  if (isDev) {
+    console.log("📤 Request:", config.method?.toUpperCase(), config.url);
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (isDev && error.response) {
+      console.error("❌ Error response:", error.response);
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+
+// ========= Funciones de autenticación =========
+
 export async function getCsrf() {
-  console.log("Solicitando CSRF cookie...");
   try {
-    const response = await api.get('/sanctum/csrf-cookie');
-    console.log("CSRF cookie recibida:", response);
+    await api.get("/sanctum/csrf-cookie");
   } catch (error) {
-    console.error("Error al obtener CSRF cookie:", error);
+    if (isDev) console.error("❌ Error al obtener CSRF cookie:", error);
   }
 }
 
 export async function login(email, password) {
-  console.log("Intentando iniciar sesión con:", email, password);
   await getCsrf();
   try {
     const response = await api.post('/api/login', { email, password });
-
-    // Log para verificar las cookies del navegador
-    console.log('Cookies del navegador:', document.cookie);  // Verifica que las cookies como laravel_session y XSRF-TOKEN estén presentes
-    
-    // Log para verificar la respuesta del login
-    console.log('Respuesta de login:', response.data);
-    console.log('Status de la respuesta:', response.status);
-
-    return response;
+    return response.data['2fa_required']
+      ? { twoFactor: true, email: response.data.email }
+      : { twoFactor: false, user: response.data.user };
   } catch (error) {
-    console.error("Error en login:", error.response);
+    if (error.response?.status === 423) {
+      throw new Error('Cuenta bloqueada. Contacta al Director.');
+    }
+    throw error;
+  }
+}
+
+export async function verifyTwoFactor(email, code) {
+  await getCsrf();
+  try {
+    const response = await api.post("/api/verify-2fa", { email, code });
+    return response.data.user;
+  } catch (error) {
+    if (error.response?.status === 423) {
+      throw new Error("Cuenta bloqueada. Contacta al administrador.");
+    }
     throw error;
   }
 }
 
 export async function register(name, email, password, password_confirmation) {
-  console.log("Intentando registrarse con:", name, email);
   await getCsrf();
+  return api.post("/api/register", { name, email, password, password_confirmation });
+}
+
+export async function logout() {
   try {
-    const response = await api.post('/api/register', { name, email, password, password_confirmation });
-    console.log("Respuesta del registro:", response);
-    return response;
+    await api.post("/api/logout");
   } catch (error) {
-    console.error("Error en registro:", error);
+    if (isDev) console.error("❌ Error al cerrar sesión:", error);
+  }
+}
+
+export async function fetchUser() {
+  try {
+    const response = await api.get("/api/user");
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 401) return null;
     throw error;
   }
 }
 
-export async function logout() {
-  console.log("Cerrando sesión...");
-
+export const requestPasswordReset = async (email) => {
+  await getCsrf();
   try {
-    await api.post('/api/logout', {}, { withCredentials: true }); // <-- Asegúrate de enviar cookies
-    console.log("Sesión cerrada");
+    return await api.post("/api/forgot-password", { email });
   } catch (error) {
-    console.error("Error al cerrar sesión:", error);
-  }
-}
-
-
-export async function fetchUser() {
- try {
-    const response = await api.get('/api/user', {
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error) {
-    if (error.response?.status === 401) {
-      // Usuario no autenticado, es normal tras logout
-      return null; // o false, según cómo manejes en React
+    if (error.response?.status === 423) {
+      throw new Error("Cuenta bloqueada. No se puede enviar correo.");
     }
-    throw error; // otros errores sí los lanzas
+    throw error;
+  }
+};
+
+export const resetPassword = async ({ email, token, password, password_confirmation }) => {
+  await getCsrf();
+  try {
+    return await api.post("/api/reset-password", { email, token, password, password_confirmation });
+  } catch (error) {
+    if (error.response?.status === 423) {
+      throw new Error("Cuenta bloqueada. No se puede cambiar contraseña.");
+    }
+    throw error;
+  }
+};
+
+export async function unlockUser(userId) {
+  try {
+    const { data } = await api.post(`/api/users/${userId}/unlock`);
+    return data;
+  } catch (error) {
+    if (isDev) console.error("❌ Error desbloqueando usuario:", error);
+    throw error;
   }
 }
